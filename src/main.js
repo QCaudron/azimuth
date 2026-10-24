@@ -17,7 +17,7 @@ const state = {
   radiusKm: DEFAULT_CENTER.radiusKm,
   labelMode: 'name', // 'name' | 'both' | 'dxcc' | 'none'
   showStates: true,
-  showGreyline: false,
+  showGreyline: true,
   showRingLabels: true,
   theme: 'light',
   now: new Date(),
@@ -57,7 +57,9 @@ function loadInitialStateFromUrl() {
   if (['name', 'both', 'dxcc', 'none'].includes(labels)) {
     state.labelMode = labels;
   }
-  if (params.get('greyline') === '1' || params.get('greyline') === 'true') {
+  if (params.get('greyline') === '0' || params.get('greyline') === 'false') {
+    state.showGreyline = false;
+  } else if (params.get('greyline') === '1' || params.get('greyline') === 'true') {
     state.showGreyline = true;
   }
 }

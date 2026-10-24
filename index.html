@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Azimuthal Equidistant Map · Amateur Radio</title>
+    <meta
+      name="description"
+      content="Interactive azimuthal equidistant projection map for amateur radio beam headings, DXCC prefixes, Maidenhead grid locators, and live solar greyline."
+    />
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body>
+    <div class="app-layout">
+      <!-- Sidebar Controls -->
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <div>
+            <h1 class="app-title">Azimuthal Map</h1>
+            <p class="app-subtitle">Amateur Radio Great-Circle Projection</p>
+          </div>
+          <button
+            type="button"
+            class="icon-btn"
+            id="theme-toggle-btn"
+            title="Toggle Light / Shack Dark Theme"
+            aria-label="Toggle Theme"
+          >
+            <span id="theme-icon">🌙</span>
+          </button>
+        </div>
+
+        <!-- Station QTH Section -->
+        <section class="panel-section">
+          <div class="section-title-row">
+            <h2 class="section-title">Center Location (QTH)</h2>
+            <span class="grid-badge" id="center-grid-badge" title="Center Maidenhead Grid Square">IN87kw</span>
+          </div>
+
+          <form id="qth-form" class="qth-form" autocomplete="off">
+            <label class="field-label" for="qth-input">
+              Coordinates or Maidenhead Grid
+            </label>
+            <div class="input-row">
+              <input
+                type="text"
+                id="qth-input"
+                class="text-input"
+                placeholder="47.943355, -3.084990 or IN87kw"
+                spellcheck="false"
+              />
+              <button type="submit" class="primary-btn">Set</button>
+            </div>
+            <div class="input-hint" id="qth-error" aria-live="polite"></div>
+          </form>
+
+          <div class="coord-grid">
+            <div class="coord-field">
+              <label for="lat-input">Latitude (°)</label>
+              <input
+                type="number"
+                id="lat-input"
+                class="num-input"
+                step="0.0001"
+                min="-89.999"
+                max="89.999"
+              />
+            </div>
+            <div class="coord-field">
+              <label for="lon-input">Longitude (°)</label>
+              <input
+                type="number"
+                id="lon-input"
+                class="num-input"
+                step="0.0001"
+                min="-180"
+                max="180"
+              />
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <button type="button" class="secondary-btn" id="reset-qth-btn">
+              Default (Bretagne)
+            </button>
+            <button type="button" class="secondary-btn" id="gps-qth-btn">
+              Use My GPS
+            </button>
+          </div>
+        </section>
+
+        <!-- Radius / Zoom Section -->
+        <section class="panel-section">
+          <div class="section-title-row">
+            <h2 class="section-title">Map Radius</h2>
+            <div class="radius-num-wrap">
+              <input
+                type="number"
+                id="radius-input"
+                class="num-input radius-num-input"
+                min="500"
+                max="20015"
+                step="100"
+                value="8000"
+              />
+              <span class="unit-label">km</span>
+            </div>
+          </div>
+
+          <input
+            type="range"
+            id="radius-slider"
+            class="range-slider"
+            min="500"
+            max="20015"
+            step="50"
+            value="8000"
+          />
+
+          <div class="preset-pills" id="radius-presets">
+            <button type="button" class="pill-btn" data-radius="2500">2,500 km</button>
+            <button type="button" class="pill-btn" data-radius="5000">5,000 km</button>
+            <button type="button" class="pill-btn active" data-radius="8000">8,000 km</button>
+            <button type="button" class="pill-btn" data-radius="14000">14,000 km</button>
+            <button type="button" class="pill-btn" data-radius="20015">Full Earth</button>
+          </div>
+        </section>
+
+        <!-- Map Display & Overlays -->
+        <section class="panel-section">
+          <h2 class="section-title">Labels &amp; Overlays</h2>
+
+          <div class="field-group">
+            <label class="field-label">Country Labels</label>
+            <div class="segmented-control" id="label-mode-control">
+              <button type="button" class="seg-btn active" data-mode="name">Name</button>
+              <button type="button" class="seg-btn" data-mode="both">Name + DXCC</button>
+              <button type="button" class="seg-btn" data-mode="dxcc">DXCC</button>
+              <button type="button" class="seg-btn" data-mode="none">Off</button>
+            </div>
+          </div>
+
+          <div class="toggles-list">
+            <label class="toggle-row">
+              <input type="checkbox" id="toggle-states" checked />
+              <span>US States &amp; Canadian Provinces</span>
+            </label>
+            <label class="toggle-row">
+              <input type="checkbox" id="toggle-greyline" />
+              <span>Live Solar Greyline / Day-Night</span>
+            </label>
+            <label class="toggle-row">
+              <input type="checkbox" id="toggle-ring-labels" checked />
+              <span>Distance Ring Labels</span>
+            </label>
+          </div>
+
+          <div class="utc-clock-bar" id="utc-clock-bar">
+            <span class="utc-dot"></span>
+            <span id="utc-time-text">UTC --:--:--</span>
+          </div>
+        </section>
+
+        <!-- Live Cursor / Pinned Target Readout -->
+        <section class="panel-section readout-card" id="readout-card">
+          <div class="section-title-row">
+            <h2 class="section-title" id="readout-mode-title">Cursor Readout</h2>
+            <button
+              type="button"
+              class="unpin-btn hidden"
+              id="unpin-btn"
+              title="Clear pinned target (Esc)"
+            >
+              Unpin ✕
+            </button>
+          </div>
+
+          <div class="readout-entity" id="readout-entity">
+            Hover or click anywhere on the map
+          </div>
+
+          <div class="readout-metrics">
+            <div class="metric-box sp-box">
+              <span class="metric-label">Short Path (SP)</span>
+              <span class="metric-main" id="readout-sp-bearing">---°</span>
+              <span class="metric-sub" id="readout-sp-dist">--- km</span>
+            </div>
+            <div class="metric-box lp-box">
+              <span class="metric-label">Long Path (LP)</span>
+              <span class="metric-main" id="readout-lp-bearing">---°</span>
+              <span class="metric-sub" id="readout-lp-dist">--- km</span>
+            </div>
+          </div>
+
+          <div class="readout-footer" id="readout-coords">
+            Grid: <strong id="readout-grid">------</strong> ·
+            <span id="readout-latlon">--.----°, --.----°</span>
+          </div>
+        </section>
+
+        <div class="sidebar-footer">
+          <span>Drag map to move center · Scroll to zoom radius · Click to pin heading</span>
+        </div>
+      </aside>
+
+      <!-- Main Map Viewport -->
+      <main class="map-stage">
+        <header class="map-banner">
+          <div class="banner-title">Azimuthal Map</div>
+          <div class="banner-meta" id="banner-meta">
+            Center: 47°56'36"N 3°05'06"W (IN87kw) · Radius: 8,000 km
+          </div>
+        </header>
+        <div class="canvas-container" id="canvas-container">
+          <canvas id="azimuth-canvas"></canvas>
+        </div>
+      </main>
+    </div>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
